@@ -1,0 +1,154 @@
+# Langfuse Helm Base Values (Shared across all environments)
+# Environment-specific values are injected via ApplicationSet parameters
+
+langfuse:
+  salt:
+    secretKeyRef:
+      name: langfuse-general
+      key: salt
+  nextauth:
+    # url: injected via parameters
+    secret:
+      secretKeyRef:
+        name: langfuse-nextauth-secret
+        key: nextauth-secret
+  encryptionKey:
+    secretKeyRef:
+      name: langfuse-encryption
+      key: encryption-key
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx-public
+    annotations:
+      kubernetes.io/ingress.class: nginx-public
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      cert-manager.io/cluster-issuer: typeface
+    # hosts: injected via parameters
+    tls:
+      enabled: true
+      secretName: langfuse-tls-cert-secret
+
+  features:
+    telemetryEnabled: false
+    signUpDisabled: false
+
+  additionalEnv:
+    - name: LANGFUSE_MAX_EVENT_SIZE_BYTES
+      value: "10000000"
+    - name: LANGFUSE_MAX_BATCH_SIZE_BYTES
+      value: "10000000"
+    - name: LANGFUSE_USE_AZURE_BLOB
+      value: "true"
+    - name: AUTH_DISABLE_USERNAME_PASSWORD
+      value: "true"
+    - name: LANGFUSE_CSP_ENFORCE_HTTPS
+      value: "true"
+    - name: AUTH_SESSION_MAX_AGE
+      value: "1440"
+    - name: AUTH_DOMAINS_WITH_SSO_ENFORCEMENT
+      value: "typeface.ai"
+    - name: AUTH_AZURE_AD_ALLOW_ACCOUNT_LINKING
+      value: "false"
+    - name: AUTH_AZURE_AD_CHECKS
+      value: "nonce,pkce"
+    - name: AUTH_AZURE_AD_CLIENT_AUTH_METHOD
+      value: "client_secret_post"
+    - name: AUTH_AZURE_AD_CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          name: langfuse-azure-ad
+          key: client-id
+    - name: AUTH_AZURE_AD_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: langfuse-azure-ad
+          key: client-secret
+    - name: AUTH_AZURE_AD_TENANT_ID
+      valueFrom:
+        secretKeyRef:
+          name: langfuse-azure-ad
+          key: tenant-id
+
+# External PostgreSQL (host injected via parameters)
+postgresql:
+  deploy: false
+  port: 5432
+  auth:
+    username: "langfuse"
+    existingSecret: langfuse-postgresql-auth
+    secretKeys:
+      userPasswordKey: password
+    database: "langfuse"
+  migration:
+    autoMigrate: true
+
+# External ClickHouse (host injected via parameters)
+clickhouse:
+  deploy: false
+  httpPort: 8443
+  nativePort: 9440
+  auth:
+    username: "default"
+    existingSecret: langfuse-clickhouse-auth
+    existingSecretKey: password
+  migration:
+    ssl: true
+
+# External Redis (host injected via parameters)
+redis:
+  deploy: false
+  port: 6380
+  tls:
+    enabled: true
+  auth:
+    username: ""
+    existingSecret: langfuse-redis-auth
+    existingSecretPasswordKey: password
+
+# Azure Blob Storage (endpoint injected via parameters)
+s3:
+  deploy: false
+  region: "auto"
+  forcePathStyle: true
+  accessKeyId:
+    secretKeyRef:
+      name: langfuse-azure-blob
+      key: storageAccountName
+  secretAccessKey:
+    secretKeyRef:
+      name: langfuse-azure-blob
+      key: storageAccountKey
+  eventUpload:
+    forcePathStyle: true
+    accessKeyId:
+      secretKeyRef:
+        name: langfuse-azure-blob
+        key: storageAccountName
+    secretAccessKey:
+      secretKeyRef:
+        name: langfuse-azure-blob
+        key: storageAccountKey
+  batchExport:
+    enabled: true
+    forcePathStyle: true
+    accessKeyId:
+      secretKeyRef:
+        name: langfuse-azure-blob
+        key: storageAccountName
+    secretAccessKey:
+      secretKeyRef:
+        name: langfuse-azure-blob
+        key: storageAccountKey
+  mediaUpload:
+    enabled: true
+    forcePathStyle: true
+    accessKeyId:
+      secretKeyRef:
+        name: langfuse-azure-blob
+        key: storageAccountName
+    secretAccessKey:
+      secretKeyRef:
+        name: langfuse-azure-blob
+        key: storageAccountKey

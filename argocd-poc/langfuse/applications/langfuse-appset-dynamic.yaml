@@ -1,0 +1,237 @@
+# ApplicationSet with Dynamic Environment Variables
+# All environment-specific values are defined in the generator, not in separate values.yaml files
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: langfuse-dynamic
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          # ==================== DEV-EU2-SU1 ====================
+          - name: dev-eu2-su1
+            env: dev
+            clusterUrl: https://kubernetes.default.svc  # Or specific cluster URL
+            chartVersion: "1.5.18"
+            autoSync: "true"
+            # Dynamic values
+            hostname: langfuse-dev.typeface.ai
+            postgresHost: langfuse-dev-postgres.database.azure.com
+            clickhouseHost: langfuse-dev-clickhouse.typeface.ai
+            clickhouseMigrationUrl: https://langfuse-dev-clickhouse.typeface.ai:8443
+            redisHost: langfuse-dev.redis.cache.windows.net
+            storageBucket: langfuse-dev-data
+            storageEndpoint: https://langfusedevsa.blob.core.windows.net
+
+          # ==================== PROD-WU2-SU1 ====================
+          - name: prod-wu2-su1
+            env: prod
+            clusterUrl: https://prod-wu2-su1-cluster.hcp.westus2.azmk8s.io:443
+            chartVersion: "1.5.18"
+            autoSync: "false"  # Manual sync for prod
+            # Dynamic values
+            hostname: langfuse.typeface.ai
+            postgresHost: langfuse-prod-postgres.database.azure.com
+            clickhouseHost: langfuse-prod-clickhouse.typeface.ai
+            clickhouseMigrationUrl: https://langfuse-prod-clickhouse.typeface.ai:8443
+            redisHost: langfuse-prod.redis.cache.windows.net
+            storageBucket: langfuse-prod-data
+            storageEndpoint: https://langfuseprodsa.blob.core.windows.net
+
+          # ==================== Add more environments here ====================
+          # - name: prod-eu2-su1
+          #   env: prod
+          #   ...
+
+  template:
+    metadata:
+      name: 'langfuse-{{name}}'
+      namespace: argocd
+      labels:
+        app: langfuse
+        env: '{{env}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+
+      sources:
+        # Source 1: Upstream Langfuse Helm chart with dynamic parameters
+        - repoURL: https://langfuse.github.io/langfuse-k8s
+          chart: langfuse
+          targetRevision: '{{chartVersion}}'
+          helm:
+            releaseName: langfuse
+            valueFiles:
+              - $values/argocd-poc/langfuse/environments/base/values.yaml
+            # Dynamic parameters - override base values
+            parameters:
+              # Hostname / Ingress
+              - name: langfuse.nextauth.url
+                value: 'https://{{hostname}}'
+              - name: langfuse.ingress.hosts[0].host
+                value: '{{hostname}}'
+              - name: langfuse.ingress.hosts[0].paths[0].path
+                value: '/'
+              - name: langfuse.ingress.hosts[0].paths[0].pathType
+                value: 'Prefix'
+
+              # PostgreSQL
+              - name: postgresql.host
+                value: '{{postgresHost}}'
+
+              # ClickHouse
+              - name: clickhouse.host
+                value: '{{clickhouseHost}}'
+              - name: clickhouse.migration.url
+                value: '{{clickhouseMigrationUrl}}'
+
+              # Redis
+              - name: redis.host
+                value: '{{redisHost}}'
+
+              # S3 / Azure Blob Storage
+              - name: s3.bucket
+                value: '{{storageBucket}}'
+              - name: s3.endpoint
+                value: '{{storageEndpoint}}'
+              - name: s3.eventUpload.bucket
+                value: '{{storageBucket}}'
+              - name: s3.eventUpload.endpoint
+                value: '{{storageEndpoint}}'
+              - name: s3.batchExport.bucket
+                value: '{{storageBucket}}'
+              - name: s3.batchExport.endpoint
+                value: '{{storageEndpoint}}'
+              - name: s3.mediaUpload.bucket
+                value: '{{storageBucket}}'
+              - name: s3.mediaUpload.endpoint
+                value: '{{storageEndpoint}}'
+
+        # Source 2: This GitOps repo (for base values file)
+        - repoURL: https://github.com/vineelsai26/Kubernetes
+          targetRevision: HEAD
+          ref: values
+          path: argocd-poc
+
+      destination:
+        server: '{{clusterUrl}}'
+        namespace: langfuse
+
+      syncPolicy:
+        automated:
+          prune: '{{autoSync}}'
+          selfHeal: '{{autoSync}}'
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+
+      ignoreDifferences:
+        - group: ""
+          kind: Secret
+          jsonPointers:
+            - /data
+
+  syncPolicy:
+    preserveResourcesOnDeletion: false
+
+---
+# Alternative: Using Cluster Labels as Source of Truth
+# This approach reads dynamic values from cluster secret labels
+# Useful when cluster registration already contains environment metadata
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: langfuse-cluster-labels
+  namespace: argocd
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            langfuse: "enabled"
+        # These values come from cluster secret annotations/labels
+        # Set them when registering the cluster:
+        # argocd cluster add <context> -l langfuse=enabled \
+        #   -l langfuse-hostname=langfuse-dev.typeface.ai \
+        #   -l langfuse-postgres-host=... etc
+        values:
+          hostname: '{{metadata.labels.langfuse-hostname}}'
+          postgresHost: '{{metadata.labels.langfuse-postgres-host}}'
+          clickhouseHost: '{{metadata.labels.langfuse-clickhouse-host}}'
+          redisHost: '{{metadata.labels.langfuse-redis-host}}'
+          storageBucket: '{{metadata.labels.langfuse-storage-bucket}}'
+          storageEndpoint: '{{metadata.labels.langfuse-storage-endpoint}}'
+          chartVersion: '{{metadata.labels.langfuse-chart-version}}'
+          autoSync: '{{metadata.labels.langfuse-auto-sync}}'
+
+  template:
+    metadata:
+      name: 'langfuse-{{name}}'
+      namespace: argocd
+    spec:
+      project: default
+      sources:
+        - repoURL: https://langfuse.github.io/langfuse-k8s
+          chart: langfuse
+          targetRevision: '{{values.chartVersion}}'
+          helm:
+            releaseName: langfuse
+            valueFiles:
+              - $values/argocd-poc/langfuse/environments/base/values.yaml
+            parameters:
+              - name: langfuse.nextauth.url
+                value: 'https://{{values.hostname}}'
+              - name: langfuse.ingress.hosts[0].host
+                value: '{{values.hostname}}'
+              - name: langfuse.ingress.hosts[0].paths[0].path
+                value: '/'
+              - name: langfuse.ingress.hosts[0].paths[0].pathType
+                value: 'Prefix'
+              - name: postgresql.host
+                value: '{{values.postgresHost}}'
+              - name: clickhouse.host
+                value: '{{values.clickhouseHost}}'
+              - name: redis.host
+                value: '{{values.redisHost}}'
+              - name: s3.bucket
+                value: '{{values.storageBucket}}'
+              - name: s3.endpoint
+                value: '{{values.storageEndpoint}}'
+              - name: s3.eventUpload.bucket
+                value: '{{values.storageBucket}}'
+              - name: s3.eventUpload.endpoint
+                value: '{{values.storageEndpoint}}'
+              - name: s3.batchExport.bucket
+                value: '{{values.storageBucket}}'
+              - name: s3.batchExport.endpoint
+                value: '{{values.storageEndpoint}}'
+              - name: s3.mediaUpload.bucket
+                value: '{{values.storageBucket}}'
+              - name: s3.mediaUpload.endpoint
+                value: '{{values.storageEndpoint}}'
+        - repoURL: https://github.com/vineelsai26/Kubernetes
+          targetRevision: HEAD
+          ref: values
+          path: argocd-poc
+      destination:
+        server: '{{server}}'
+        namespace: langfuse
+      syncPolicy:
+        automated:
+          prune: '{{values.autoSync}}'
+          selfHeal: '{{values.autoSync}}'
+        syncOptions:
+          - CreateNamespace=true
