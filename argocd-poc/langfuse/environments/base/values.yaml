@@ -1,5 +1,17 @@
 # Langfuse Helm Base Values (Shared across all environments)
-# Environment-specific values are injected via ApplicationSet parameters
+# Environment-specific values are injected via ApplicationSet parameters from versions.json
+#
+# Values overridden by ApplicationSet:
+#   - langfuse.nextauth.url
+#   - langfuse.ingress.hosts[*]
+#   - langfuse.ingress.ingressClassName
+#   - langfuse.ingress.tls.secretName
+#   - langfuse.web.replicas
+#   - langfuse.worker.replicas
+#   - postgresql.primary.persistence.size
+#   - clickhouse.persistence.size
+#   - redis.master.persistence.size
+#   - minio.persistence.size
 
 langfuse:
   # Limit old ReplicaSets kept for rollback (default is 10)
@@ -25,16 +37,15 @@ langfuse:
 
   ingress:
     enabled: true
-    ingressClassName: nginx-public
+    # ingressClassName: injected via parameters
     annotations:
-      kubernetes.io/ingress.class: nginx-public
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
       nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
       cert-manager.io/cluster-issuer: typeface
     # hosts: injected via parameters
     tls:
       enabled: true
-      secretName: langfuse-tls-cert-secret
+      # secretName: injected via parameters
 
   features:
     telemetryEnabled: false
@@ -66,7 +77,7 @@ postgresql:
   primary:
     persistence:
       enabled: true
-      size: 20Gi
+      # size: injected via parameters
       storageClass: ""  # Use default storage class
     resources:
       requests:
@@ -91,7 +102,7 @@ clickhouse:
   shards: 1
   persistence:
     enabled: true
-    size: 20Gi
+    # size: injected via parameters
     storageClass: ""  # Use default storage class
   resources:
     requests:
@@ -118,7 +129,7 @@ redis:
   master:
     persistence:
       enabled: true
-      size: 8Gi
+      # size: injected via parameters
       storageClass: ""  # Use default storage class
     resources:
       requests:
@@ -184,7 +195,7 @@ minio:
   mode: standalone
   persistence:
     enabled: true
-    size: 20Gi
+    # size: injected via parameters
     storageClass: ""  # Use default storage class
   resources:
     requests:

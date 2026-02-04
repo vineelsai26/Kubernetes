@@ -15,7 +15,7 @@ spec:
             env: dev
             clusterUrl: https://kubernetes.default.svc  # Or specific cluster URL
             chartVersion: "1.5.18"
-            autoSync: "true"
+            autoSync: true
             # Dynamic values
             hostname: langfuse-dev.typeface.ai
             # All databases and storage are bundled (PostgreSQL, ClickHouse, Redis, MinIO)
@@ -23,9 +23,9 @@ spec:
           # ==================== PROD-WU2-SU1 ====================
           - name: prod-wu2-su1
             env: prod
-            clusterUrl: https://prod-wu2-su1-cluster.hcp.westus2.azmk8s.io:443
+            clusterUrl: https://kubernetes.default.svc
             chartVersion: "1.5.18"
-            autoSync: "false"  # Manual sync for prod
+            autoSync: false  # Manual sync for prod
             # Dynamic values
             hostname: langfuse.typeface.ai
             # All databases and storage are bundled (PostgreSQL, ClickHouse, Redis, MinIO)
@@ -82,8 +82,8 @@ spec:
 
       syncPolicy:
         automated:
-          prune: '{{autoSync}}'
-          selfHeal: '{{autoSync}}'
+          prune: true
+          selfHeal: true
           allowEmpty: false
         syncOptions:
           - CreateNamespace=true
@@ -167,7 +167,7 @@ spec:
         namespace: langfuse
       syncPolicy:
         automated:
-          prune: '{{values.autoSync}}'
-          selfHeal: '{{values.autoSync}}'
+          prune: true
+          selfHeal: true
         syncOptions:
           - CreateNamespace=true

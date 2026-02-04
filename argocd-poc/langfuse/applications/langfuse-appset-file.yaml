@@ -1,0 +1,102 @@
+# ApplicationSet with Git File Generator
+# Reads chart version and environment config from versions.json file
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: langfuse-file
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/vineelsai26/Kubernetes
+        revision: HEAD
+        files:
+          - path: argocd-poc/langfuse/environments/versions.json
+
+  template:
+    metadata:
+      name: 'langfuse-{{name}}'
+      namespace: argocd
+      labels:
+        app: langfuse
+        env: '{{env}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+
+      sources:
+        # Source 1: Upstream Langfuse Helm chart
+        - repoURL: https://langfuse.github.io/langfuse-k8s
+          chart: langfuse
+          targetRevision: '{{chartVersion}}'  # Read from versions.json
+          helm:
+            releaseName: langfuse
+            valueFiles:
+              - $values/argocd-poc/langfuse/environments/base/values.yaml
+            parameters:
+              # Ingress / Hostname
+              - name: langfuse.nextauth.url
+                value: 'https://{{hostname}}'
+              - name: langfuse.ingress.hosts[0].host
+                value: '{{hostname}}'
+              - name: langfuse.ingress.hosts[0].paths[0].path
+                value: '/'
+              - name: langfuse.ingress.hosts[0].paths[0].pathType
+                value: 'Prefix'
+              - name: langfuse.ingress.ingressClassName
+                value: '{{ingressClassName}}'
+              - name: langfuse.ingress.tls.secretName
+                value: '{{tlsSecretName}}'
+
+              # Replicas
+              - name: langfuse.web.replicas
+                value: '{{webReplicas}}'
+              - name: langfuse.worker.replicas
+                value: '{{workerReplicas}}'
+
+              # Storage sizes
+              - name: postgresql.primary.persistence.size
+                value: '{{postgresSize}}'
+              - name: clickhouse.persistence.size
+                value: '{{clickhouseSize}}'
+              - name: redis.master.persistence.size
+                value: '{{redisSize}}'
+              - name: s3.persistence.size
+                value: '{{minioSize}}'
+
+        # Source 2: GitOps repo for base values
+        - repoURL: https://github.com/vineelsai26/Kubernetes
+          targetRevision: HEAD
+          ref: values
+          path: argocd-poc
+
+      destination:
+        server: '{{clusterUrl}}'
+        namespace: langfuse-{{name}}
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+
+      ignoreDifferences:
+        - group: ""
+          kind: Secret
+          jsonPointers:
+            - /data
+
+  syncPolicy:
+    preserveResourcesOnDeletion: false

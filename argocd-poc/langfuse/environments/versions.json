@@ -1,0 +1,32 @@
+[
+  {
+    "name": "dev1",
+    "env": "dev",
+    "clusterUrl": "https://kubernetes.default.svc",
+    "chartVersion": "1.5.18",
+    "hostname": "langfuse-dev.typeface.ai",
+    "ingressClassName": "nginx-public",
+    "tlsSecretName": "langfuse-tls-cert-secret",
+    "postgresSize": "8Gi",
+    "clickhouseSize": "8Gi",
+    "redisSize": "8Gi",
+    "minioSize": "8Gi",
+    "webReplicas": "1",
+    "workerReplicas": "1"
+  },
+  {
+    "name": "dev2",
+    "env": "dev2",
+    "clusterUrl": "https://kubernetes.default.svc",
+    "chartVersion": "1.5.18",
+    "hostname": "langfuse-dev2.typeface.ai",
+    "ingressClassName": "nginx-public",
+    "tlsSecretName": "langfuse-tls-cert-secret",
+    "postgresSize": "8Gi",
+    "clickhouseSize": "8Gi",
+    "redisSize": "8Gi",
+    "minioSize": "8Gi",
+    "webReplicas": "1",
+    "workerReplicas": "1"
+  }
+]
