@@ -18,7 +18,7 @@ spec:
             autoSync: "true"
             # Dynamic values
             hostname: langfuse-dev.typeface.ai
-            postgresHost: langfuse-dev-postgres.database.azure.com
+            # PostgreSQL - using bundled database (no external host needed)
             clickhouseHost: langfuse-dev-clickhouse.typeface.ai
             clickhouseMigrationUrl: https://langfuse-dev-clickhouse.typeface.ai:8443
             redisHost: langfuse-dev.redis.cache.windows.net
@@ -33,7 +33,7 @@ spec:
             autoSync: "false"  # Manual sync for prod
             # Dynamic values
             hostname: langfuse.typeface.ai
-            postgresHost: langfuse-prod-postgres.database.azure.com
+            # PostgreSQL - using bundled database (no external host needed)
             clickhouseHost: langfuse-prod-clickhouse.typeface.ai
             clickhouseMigrationUrl: https://langfuse-prod-clickhouse.typeface.ai:8443
             redisHost: langfuse-prod.redis.cache.windows.net
@@ -78,9 +78,7 @@ spec:
               - name: langfuse.ingress.hosts[0].paths[0].pathType
                 value: 'Prefix'
 
-              # PostgreSQL
-              - name: postgresql.host
-                value: '{{postgresHost}}'
+              # PostgreSQL - using bundled database (no external host needed)
 
               # ClickHouse
               - name: clickhouse.host
@@ -166,10 +164,10 @@ spec:
         # Set them when registering the cluster:
         # argocd cluster add <context> -l langfuse=enabled \
         #   -l langfuse-hostname=langfuse-dev.typeface.ai \
-        #   -l langfuse-postgres-host=... etc
+        #   -l langfuse-clickhouse-host=... etc
+        # Note: PostgreSQL uses bundled database, no external host needed
         values:
           hostname: '{{metadata.labels.langfuse-hostname}}'
-          postgresHost: '{{metadata.labels.langfuse-postgres-host}}'
           clickhouseHost: '{{metadata.labels.langfuse-clickhouse-host}}'
           redisHost: '{{metadata.labels.langfuse-redis-host}}'
           storageBucket: '{{metadata.labels.langfuse-storage-bucket}}'
@@ -200,8 +198,7 @@ spec:
                 value: '/'
               - name: langfuse.ingress.hosts[0].paths[0].pathType
                 value: 'Prefix'
-              - name: postgresql.host
-                value: '{{values.postgresHost}}'
+              # PostgreSQL - using bundled database (no external host needed)
               - name: clickhouse.host
                 value: '{{values.clickhouseHost}}'
               - name: redis.host

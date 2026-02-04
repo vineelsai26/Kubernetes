@@ -32,9 +32,7 @@ spec:
           - name: langfuse.ingress.hosts[0].paths[0].pathType
             value: Prefix
 
-          # PostgreSQL
-          - name: postgresql.host
-            value: langfuse-dev-postgres.database.azure.com
+          # PostgreSQL - using bundled database (no external host needed)
 
           # ClickHouse
           - name: clickhouse.host

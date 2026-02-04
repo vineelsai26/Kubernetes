@@ -71,16 +71,30 @@ langfuse:
           name: langfuse-azure-ad
           key: tenant-id
 
-# External PostgreSQL (host injected via parameters)
+# Bundled PostgreSQL (deployed as part of the Helm release)
 postgresql:
-  deploy: false
-  port: 5432
+  deploy: true
+  architecture: standalone
   auth:
     username: "langfuse"
+    password: ""  # Set via existingSecret
+    database: "langfuse"
     existingSecret: langfuse-postgresql-auth
     secretKeys:
+      adminPasswordKey: postgres-password
       userPasswordKey: password
-    database: "langfuse"
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""  # Use default storage class
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
   migration:
     autoMigrate: true
 
