@@ -2,6 +2,12 @@
 # Environment-specific values are injected via ApplicationSet parameters
 
 langfuse:
+  # Limit old ReplicaSets kept for rollback (default is 10)
+  web:
+    revisionHistoryLimit: 2
+  worker:
+    revisionHistoryLimit: 2
+
   salt:
     secretKeyRef:
       name: langfuse-general
