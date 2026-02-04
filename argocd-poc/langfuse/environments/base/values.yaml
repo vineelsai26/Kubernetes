@@ -39,37 +39,11 @@ langfuse:
       value: "10000000"
     - name: LANGFUSE_MAX_BATCH_SIZE_BYTES
       value: "10000000"
-    - name: LANGFUSE_USE_AZURE_BLOB
-      value: "true"
-    - name: AUTH_DISABLE_USERNAME_PASSWORD
-      value: "true"
     - name: LANGFUSE_CSP_ENFORCE_HTTPS
       value: "true"
     - name: AUTH_SESSION_MAX_AGE
       value: "1440"
-    - name: AUTH_DOMAINS_WITH_SSO_ENFORCEMENT
-      value: "typeface.ai"
-    - name: AUTH_AZURE_AD_ALLOW_ACCOUNT_LINKING
-      value: "false"
-    - name: AUTH_AZURE_AD_CHECKS
-      value: "nonce,pkce"
-    - name: AUTH_AZURE_AD_CLIENT_AUTH_METHOD
-      value: "client_secret_post"
-    - name: AUTH_AZURE_AD_CLIENT_ID
-      valueFrom:
-        secretKeyRef:
-          name: langfuse-azure-ad
-          key: client-id
-    - name: AUTH_AZURE_AD_CLIENT_SECRET
-      valueFrom:
-        secretKeyRef:
-          name: langfuse-azure-ad
-          key: client-secret
-    - name: AUTH_AZURE_AD_TENANT_ID
-      valueFrom:
-        secretKeyRef:
-          name: langfuse-azure-ad
-          key: tenant-id
+    # Username/password auth enabled (Azure AD disabled)
 
 # Bundled PostgreSQL (deployed as part of the Helm release)
 postgresql:
@@ -124,59 +98,95 @@ clickhouse:
     autoMigrate: true
     ssl: false
 
-# External Redis (host injected via parameters)
+# Bundled Redis (deployed as part of the Helm release)
 redis:
-  deploy: false
-  port: 6380
+  deploy: true
+  port: 6379
   tls:
-    enabled: true
+    enabled: false
   auth:
-    username: ""
+    enabled: true
     existingSecret: langfuse-redis-auth
     existingSecretPasswordKey: password
+  architecture: standalone
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+      storageClass: ""  # Use default storage class
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 250m
 
-# Azure Blob Storage (endpoint injected via parameters)
+# Bundled MinIO (S3-compatible storage deployed as part of the Helm release)
 s3:
-  deploy: false
-  region: "auto"
+  deploy: true
+  bucket: langfuse
+  region: "us-east-1"
   forcePathStyle: true
   accessKeyId:
     secretKeyRef:
-      name: langfuse-azure-blob
-      key: storageAccountName
+      name: langfuse-minio-auth
+      key: root-user
   secretAccessKey:
     secretKeyRef:
-      name: langfuse-azure-blob
-      key: storageAccountKey
+      name: langfuse-minio-auth
+      key: root-password
   eventUpload:
+    bucket: langfuse
     forcePathStyle: true
     accessKeyId:
       secretKeyRef:
-        name: langfuse-azure-blob
-        key: storageAccountName
+        name: langfuse-minio-auth
+        key: root-user
     secretAccessKey:
       secretKeyRef:
-        name: langfuse-azure-blob
-        key: storageAccountKey
+        name: langfuse-minio-auth
+        key: root-password
   batchExport:
     enabled: true
+    bucket: langfuse
     forcePathStyle: true
     accessKeyId:
       secretKeyRef:
-        name: langfuse-azure-blob
-        key: storageAccountName
+        name: langfuse-minio-auth
+        key: root-user
     secretAccessKey:
       secretKeyRef:
-        name: langfuse-azure-blob
-        key: storageAccountKey
+        name: langfuse-minio-auth
+        key: root-password
   mediaUpload:
     enabled: true
+    bucket: langfuse
     forcePathStyle: true
     accessKeyId:
       secretKeyRef:
-        name: langfuse-azure-blob
-        key: storageAccountName
+        name: langfuse-minio-auth
+        key: root-user
     secretAccessKey:
       secretKeyRef:
-        name: langfuse-azure-blob
-        key: storageAccountKey
+        name: langfuse-minio-auth
+        key: root-password
+
+# MinIO configuration
+minio:
+  enabled: true
+  mode: standalone
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""  # Use default storage class
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  auth:
+    existingSecret: langfuse-minio-auth
+  defaultBuckets: "langfuse"

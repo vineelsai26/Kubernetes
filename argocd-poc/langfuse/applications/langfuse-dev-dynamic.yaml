@@ -20,43 +20,7 @@ spec:
         releaseName: langfuse
         valueFiles:
           - $values/argocd-poc/langfuse/environments/base/values.yaml
-        # All environment-specific values as parameters
-        parameters:
-          # Hostname / Ingress
-          - name: langfuse.nextauth.url
-            value: https://langfuse-dev.typeface.ai
-          - name: langfuse.ingress.hosts[0].host
-            value: langfuse-dev.typeface.ai
-          - name: langfuse.ingress.hosts[0].paths[0].path
-            value: /
-          - name: langfuse.ingress.hosts[0].paths[0].pathType
-            value: Prefix
-
-          # PostgreSQL - using bundled database (no external host needed)
-
-          # ClickHouse - using bundled database (no external host needed)
-
-          # Redis
-          - name: redis.host
-            value: langfuse-dev.redis.cache.windows.net
-
-          # Azure Blob Storage
-          - name: s3.bucket
-            value: langfuse-dev-data
-          - name: s3.endpoint
-            value: https://langfusedevsa.blob.core.windows.net
-          - name: s3.eventUpload.bucket
-            value: langfuse-dev-data
-          - name: s3.eventUpload.endpoint
-            value: https://langfusedevsa.blob.core.windows.net
-          - name: s3.batchExport.bucket
-            value: langfuse-dev-data
-          - name: s3.batchExport.endpoint
-            value: https://langfusedevsa.blob.core.windows.net
-          - name: s3.mediaUpload.bucket
-            value: langfuse-dev-data
-          - name: s3.mediaUpload.endpoint
-            value: https://langfusedevsa.blob.core.windows.net
+        # All databases and storage are bundled - no external parameters needed
 
     # Source 2: GitOps repo for base values
     - repoURL: https://github.com/vineelsai26/Kubernetes
