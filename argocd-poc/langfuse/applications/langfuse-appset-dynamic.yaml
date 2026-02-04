@@ -18,9 +18,7 @@ spec:
             autoSync: "true"
             # Dynamic values
             hostname: langfuse-dev.typeface.ai
-            # PostgreSQL - using bundled database (no external host needed)
-            clickhouseHost: langfuse-dev-clickhouse.typeface.ai
-            clickhouseMigrationUrl: https://langfuse-dev-clickhouse.typeface.ai:8443
+            # PostgreSQL & ClickHouse - using bundled databases (no external hosts needed)
             redisHost: langfuse-dev.redis.cache.windows.net
             storageBucket: langfuse-dev-data
             storageEndpoint: https://langfusedevsa.blob.core.windows.net
@@ -33,9 +31,7 @@ spec:
             autoSync: "false"  # Manual sync for prod
             # Dynamic values
             hostname: langfuse.typeface.ai
-            # PostgreSQL - using bundled database (no external host needed)
-            clickhouseHost: langfuse-prod-clickhouse.typeface.ai
-            clickhouseMigrationUrl: https://langfuse-prod-clickhouse.typeface.ai:8443
+            # PostgreSQL & ClickHouse - using bundled databases (no external hosts needed)
             redisHost: langfuse-prod.redis.cache.windows.net
             storageBucket: langfuse-prod-data
             storageEndpoint: https://langfuseprodsa.blob.core.windows.net
@@ -78,13 +74,7 @@ spec:
               - name: langfuse.ingress.hosts[0].paths[0].pathType
                 value: 'Prefix'
 
-              # PostgreSQL - using bundled database (no external host needed)
-
-              # ClickHouse
-              - name: clickhouse.host
-                value: '{{clickhouseHost}}'
-              - name: clickhouse.migration.url
-                value: '{{clickhouseMigrationUrl}}'
+              # PostgreSQL & ClickHouse - using bundled databases (no external hosts needed)
 
               # Redis
               - name: redis.host
@@ -164,11 +154,10 @@ spec:
         # Set them when registering the cluster:
         # argocd cluster add <context> -l langfuse=enabled \
         #   -l langfuse-hostname=langfuse-dev.typeface.ai \
-        #   -l langfuse-clickhouse-host=... etc
-        # Note: PostgreSQL uses bundled database, no external host needed
+        #   -l langfuse-redis-host=... etc
+        # Note: PostgreSQL & ClickHouse use bundled databases, no external hosts needed
         values:
           hostname: '{{metadata.labels.langfuse-hostname}}'
-          clickhouseHost: '{{metadata.labels.langfuse-clickhouse-host}}'
           redisHost: '{{metadata.labels.langfuse-redis-host}}'
           storageBucket: '{{metadata.labels.langfuse-storage-bucket}}'
           storageEndpoint: '{{metadata.labels.langfuse-storage-endpoint}}'
@@ -198,9 +187,7 @@ spec:
                 value: '/'
               - name: langfuse.ingress.hosts[0].paths[0].pathType
                 value: 'Prefix'
-              # PostgreSQL - using bundled database (no external host needed)
-              - name: clickhouse.host
-                value: '{{values.clickhouseHost}}'
+              # PostgreSQL & ClickHouse - using bundled databases (no external hosts needed)
               - name: redis.host
                 value: '{{values.redisHost}}'
               - name: s3.bucket

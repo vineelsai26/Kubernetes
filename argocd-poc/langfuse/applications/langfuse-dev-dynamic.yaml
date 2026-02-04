@@ -34,11 +34,7 @@ spec:
 
           # PostgreSQL - using bundled database (no external host needed)
 
-          # ClickHouse
-          - name: clickhouse.host
-            value: langfuse-dev-clickhouse.typeface.ai
-          - name: clickhouse.migration.url
-            value: https://langfuse-dev-clickhouse.typeface.ai:8443
+          # ClickHouse - using bundled database (no external host needed)
 
           # Redis
           - name: redis.host

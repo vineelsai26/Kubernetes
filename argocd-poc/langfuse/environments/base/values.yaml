@@ -98,17 +98,31 @@ postgresql:
   migration:
     autoMigrate: true
 
-# External ClickHouse (host injected via parameters)
+# Bundled ClickHouse (deployed as part of the Helm release)
 clickhouse:
-  deploy: false
-  httpPort: 8443
-  nativePort: 9440
+  deploy: true
+  httpPort: 8123
+  nativePort: 9000
   auth:
     username: "default"
     existingSecret: langfuse-clickhouse-auth
     existingSecretKey: password
+  replicaCount: 1
+  shards: 1
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""  # Use default storage class
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
   migration:
-    ssl: true
+    autoMigrate: true
+    ssl: false
 
 # External Redis (host injected via parameters)
 redis:
