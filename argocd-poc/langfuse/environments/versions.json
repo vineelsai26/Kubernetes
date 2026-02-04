@@ -3,7 +3,7 @@
     "name": "dev1",
     "env": "dev",
     "clusterUrl": "https://kubernetes.default.svc",
-    "chartVersion": "1.5.18",
+    "chartVersion": "1.5.19",
     "hostname": "langfuse-dev.typeface.ai",
     "ingressClassName": "nginx-public",
     "tlsSecretName": "langfuse-tls-cert-secret",
